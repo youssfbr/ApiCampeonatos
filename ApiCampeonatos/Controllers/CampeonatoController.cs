@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ApiCampeonatos.Data;
+using ApiCampeonatos.Entities;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ApiCampeonatos.Controllers
 {
+    [Authorize]
     [Route("[controller]/classificacao_geral")]
     [ApiController]
     public class CampeonatoController : ControllerBase
@@ -35,7 +32,7 @@ namespace ApiCampeonatos.Controllers
 
         [HttpPost]
         public async Task<ActionResult<Campeonato>> PostCampeonato(Campeonato campeonato)
-        {         
+        {      
             _context.Campeonatos.Add(campeonato);
             await _context.SaveChangesAsync();
           

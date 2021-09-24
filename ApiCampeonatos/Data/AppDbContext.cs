@@ -1,10 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApiCampeonatos.Data
+namespace ApiCampeonatos.Entities
 {
     public class AppDbContext : DbContext
     {
