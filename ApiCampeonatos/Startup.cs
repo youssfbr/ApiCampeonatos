@@ -1,11 +1,10 @@
+using System;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
 
 using ApiCampeonatos.Entities;
 using ApiCampeonatos.Helpers;
@@ -17,19 +16,43 @@ namespace ApiCampeonatos
     {
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            Configuration = configuration;                    
         }
 
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {
-            string mySqlConnection = Configuration.GetConnectionString("DefaultConnection");
+        {       
+     
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");            
+            string mySqlConnection;
 
-            services.AddDbContextPool<AppDbContext>(options =>
-                        options.UseMySql(mySqlConnection,
-                        ServerVersion.AutoDetect(mySqlConnection)));
+            services.AddDbContext<AppDbContext>(options => 
+            {
+                if (env == "Development")
+                {
+                    mySqlConnection = Configuration.GetConnectionString("DefaultConnection");
+                    options.UseMySql(mySqlConnection,
+                    ServerVersion.AutoDetect(mySqlConnection));
+                }
+                else
+                {
+                    var connUrl = Environment.GetEnvironmentVariable("CLEARDB_DATABASE_URL");
+                    connUrl = connUrl.Replace("mysql://", string.Empty);                    
+                    var userPassSide = connUrl.Split("@")[0];                       
+                    var hostSide = connUrl.Split("@")[1];                       
+
+                    var connUser = userPassSide.Split(":")[0];                   
+                    var connPass = userPassSide.Split(":")[1];                   
+                    var connHost = hostSide.Split("/")[0];                   
+                    var connDb = hostSide.Split("/")[1].Split("?")[0];
+
+                    mySqlConnection = $"server={connHost};Uid={connUser};Pwd={connPass};Database={connDb}";
+                    options.UseMySql(mySqlConnection,
+                    ServerVersion.AutoDetect(mySqlConnection));
+                }                   
+            });   
 
             services.AddCors();
             services.AddControllers();
@@ -37,24 +60,12 @@ namespace ApiCampeonatos
             services.AddAuthentication("BasicAuthentication")
                 .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
             
-            services.AddScoped<IUserService, UserService>();
-            
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ApiCampeonatos", Version = "v1" });
-            });
+            services.AddScoped<IUserService, UserService>();       
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ApiCampeonatos v1"));
-            }
-
+        {  
             app.UseHttpsRedirection();
 
             app.UseRouting();
